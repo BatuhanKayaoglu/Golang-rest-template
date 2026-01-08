@@ -18,13 +18,14 @@ services:
       JWT_SECRET_KEY: ObL89O3nOSSEj6tbdHako0cXtPErzBUfq8l8o/3KD9g=INSECURE
       API_SECRET_KEY: cJGZ8L1sDcPezjOy1zacPJZxzZxrPObm2Ggs1U0V+fE=INSECURE
       REDIS_HOST: redis
+      MONGO_HOST: mongo
 
   db:
     image: postgres:14.1-alpine
     restart: always
     container_name: dockerPostgres
     volumes:
-      - .dbdata:/var/lib/postgres
+      - .dbdata:/var/lib/postgresql/data
     ports:
       - "5435:5435"
     environment:
@@ -36,7 +37,7 @@ services:
   redis:
     image: "redis:alpine"
     ports:
-      - "6379:6379"
+      - "8381:6379"
     container_name: dockerRedis
 
   mongo:

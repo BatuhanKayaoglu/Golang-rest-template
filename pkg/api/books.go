@@ -130,11 +130,6 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 // @Failure 401 {string} string "Unauthorized"
 // @Router /books [post]
 func (r *bookRepository) CreateBook(c *gin.Context) {
-	appCtx, exists := c.MustGet("appCtx").(*bookRepository)
-	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-		return
-	}
 	var input models.CreateBook
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -144,14 +139,24 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 
 	book := models.Book{Title: input.Title, Author: input.Author}
 
-	appCtx.DB.Create(&book)
+	r.DB.Create(&book)
 
-	// Invalidate cache
+	// Add redis cache for the newly created book
+	cacheKey := "book_" + strconv.Itoa(int(book.ID))
+	serializedBook, err := json.Marshal(book)
+
+	redisErr := r.RedisClient.Set(*r.Ctx, cacheKey, serializedBook, time.Hour).Err()
+	if redisErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set cache"})
+		return
+	}
+
+	// Invalidate list cache
 	keysPattern := "books_offset_*"
-	keys, err := appCtx.RedisClient.Keys(*appCtx.Ctx, keysPattern).Result()
+	keys, err := r.RedisClient.Keys(*r.Ctx, keysPattern).Result()
 	if err == nil {
 		for _, key := range keys {
-			appCtx.RedisClient.Del(*appCtx.Ctx, key)
+			r.RedisClient.Del(*r.Ctx, key)
 		}
 	}
 

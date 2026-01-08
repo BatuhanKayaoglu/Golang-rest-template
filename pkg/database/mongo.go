@@ -2,13 +2,18 @@ package database
 
 import (
 	"context"
+	"os"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func SetupMongoDB() *mongo.Collection {
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	mongoHost := os.Getenv("MONGO_HOST")
+	if mongoHost == "" {
+		mongoHost = "localhost"
+	}
+	clientOptions := options.Client().ApplyURI("mongodb://" + mongoHost + ":27017")
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		panic(err)

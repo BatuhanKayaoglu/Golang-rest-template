@@ -25,7 +25,7 @@ func HashPassword(password string) (string, error) {
 
 func GenerateToken(username string) (string, error) {
 	// The expiration time after which the token will be invalid.
-	expirationTime := time.Now().Add(5 * time.Minute).Unix()
+	expirationTime := time.Now().Add(1 * time.Hour).Unix()
 
 	// Create the JWT claims, which includes the username and expiration time
 	claims := &jwt.StandardClaims{
