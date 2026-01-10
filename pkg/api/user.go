@@ -76,7 +76,7 @@ func (r *userRepository) LoginHandler(c *gin.Context) {
 	}
 
 	// Generate JWT token
-	token, err := auth.GenerateToken(dbUser.Username)
+	token, err := auth.GenerateToken(dbUser.Username, dbUser.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
 		return

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -11,7 +12,8 @@ import (
 )
 
 // Claims struct to be encoded to JWT
-type Claims struct {
+type CustomClaims struct {
+	UserId   string `json:"userId"`
 	Username string `json:"username"`
 	jwt.StandardClaims
 }
@@ -23,23 +25,20 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-func GenerateToken(username string) (string, error) {
-	// The expiration time after which the token will be invalid.
+func GenerateToken(username string, id uint) (string, error) {
 	expirationTime := time.Now().Add(1 * time.Hour).Unix()
 
-	// Create the JWT claims, which includes the username and expiration time
-	claims := &jwt.StandardClaims{
-		// In JWT, the expiry time is expressed as unix milliseconds
-		ExpiresAt: expirationTime,
-		Issuer:    username,
+	claims := &CustomClaims{
+		UserId:   strconv.FormatUint(uint64(id), 10),
+		Username: username,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime,
+			Issuer:    "golang-api",
+		},
 	}
 
-	// Declare the token with the algorithm used for signing, and the claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Create the JWT string
 	tokenString, err := token.SignedString(JwtKey)
-
 	if err != nil {
 		return "", err
 	}

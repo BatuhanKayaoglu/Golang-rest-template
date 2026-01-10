@@ -26,7 +26,7 @@ func JWTAuth() gin.HandlerFunc {
 		}
 
 		tokenStr := header[len(BearerSchema):]
-		claims := &auth.Claims{}
+		claims := &auth.CustomClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 			return auth.JwtKey, nil
@@ -45,6 +45,7 @@ func JWTAuth() gin.HandlerFunc {
 		}
 
 		c.Set("username", claims.Username)
+		c.Set("userId", claims.UserId)
 		c.Next()
 	}
 }

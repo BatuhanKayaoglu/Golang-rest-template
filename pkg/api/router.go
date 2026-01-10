@@ -29,11 +29,12 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 	bookRepository := NewBookRepository(db, redisClient, ctx)
 	userRepository := NewUserRepository(db, ctx)
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
 	r.Use(ContextMiddleware(bookRepository))
 
 	//r.Use(gin.Logger())
-	r.Use(middleware.Logger(logger, mongoCollection))
+	r.Use(middleware.RequestResponseLogger(logger, mongoCollection))
 	if gin.Mode() == gin.ReleaseMode {
 		r.Use(middleware.Security())
 		r.Use(middleware.Xss())
