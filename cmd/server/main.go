@@ -4,8 +4,14 @@ import (
 	"context"
 	"golang-rest-api-template/pkg/api"
 	"golang-rest-api-template/pkg/cache"
+	"golang-rest-api-template/pkg/config"
 	"golang-rest-api-template/pkg/database"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -38,6 +44,8 @@ import (
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
+	cfg := config.Load()
+
 	redisClient := cache.NewRedisClient()
 	db := database.NewDatabase()
 	dbWrapper := &database.GormDatabase{DB: db}
@@ -46,12 +54,40 @@ func main() {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
-	//gin.SetMode(gin.ReleaseMode)
-	gin.SetMode(gin.DebugMode)
+	if cfg.Server.Mode == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
 
 	r := api.NewRouter(logger, mongo, dbWrapper, redisClient, &ctx)
 
-	if err := r.Run(":8001"); err != nil {
-		log.Fatal(err)
+	srv := &http.Server{
+		Addr:    ":" + cfg.Server.Port,
+		Handler: r,
 	}
+
+	// Start server in goroutine
+	go func() {
+		log.Printf("Server starting on port %s", cfg.Server.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server...")
+
+	// Graceful shutdown with 5 second timeout
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exited gracefully")
 }

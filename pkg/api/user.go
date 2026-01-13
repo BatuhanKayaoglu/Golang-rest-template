@@ -3,11 +3,10 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
 	"golang-rest-api-template/pkg/auth"
 	"golang-rest-api-template/pkg/database"
 	"golang-rest-api-template/pkg/models"
-	"net/http"
+	"golang-rest-api-template/pkg/response"
 
 	"gorm.io/gorm"
 
@@ -20,12 +19,13 @@ type UserRepository interface {
 	RegisterHandler(c *gin.Context)
 }
 
-// bookRepository holds shared resources like database and Redis client
+// userRepository holds shared resources like database
 type userRepository struct {
 	DB  database.Database
 	Ctx *context.Context
 }
 
+// NewUserRepository creates a new UserRepository
 func NewUserRepository(db database.Database, ctx *context.Context) *userRepository {
 	return &userRepository{
 		DB:  db,
@@ -53,36 +53,32 @@ func (r *userRepository) LoginHandler(c *gin.Context) {
 	var incomingUser models.User
 	var dbUser models.User
 
-	// Get JSON body
 	if err := c.ShouldBindJSON(&incomingUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		response.BadRequest(c, "Invalid request body")
 		return
 	}
 
-	// Fetch the user from the database
 	if err := r.DB.Where("username = ?", incomingUser.Username).First(&dbUser).Error(); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+			response.Unauthorized(c, "Invalid username or password")
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			response.InternalServerError(c, "Database error")
 		}
 		return
 	}
 
-	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(incomingUser.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		response.Unauthorized(c, "Invalid username or password")
 		return
 	}
 
-	// Generate JWT token
 	token, err := auth.GenerateToken(dbUser.Username, dbUser.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
+		response.InternalServerError(c, "Error generating token")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	response.OK(c, gin.H{"token": token})
 }
 
 // RegisterHandler godoc
@@ -102,25 +98,22 @@ func (r *userRepository) RegisterHandler(c *gin.Context) {
 	var user models.LoginUser
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	// Hash the password
 	hashedPassword, err := auth.HashPassword(user.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
+		response.InternalServerError(c, "Could not hash password")
 		return
 	}
 
-	// Create new user
 	newUser := models.User{Username: user.Username, Password: hashedPassword}
 
-	// Save the user to the database
 	if err := r.DB.Create(&newUser).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Could not save user: %v", err)})
+		response.InternalServerError(c, "Could not save user")
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Registration successful"})
+	response.Created(c, gin.H{"message": "Registration successful"})
 }

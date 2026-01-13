@@ -43,17 +43,30 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 	r.Use(middleware.RateLimiter(rate.Every(1*time.Minute), 60)) // 60 requests per minute
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
-	v1 := r.Group("/api/v1")
-	{
-		v1.GET("/", bookRepository.Healthcheck)
-		v1.GET("/books", middleware.APIKeyAuth(), bookRepository.FindBooks)
-		v1.POST("/books", middleware.APIKeyAuth(), middleware.JWTAuth(), bookRepository.CreateBook)
-		v1.GET("/books/:id", middleware.APIKeyAuth(), bookRepository.FindBook)
-		v1.PUT("/books/:id", middleware.APIKeyAuth(), bookRepository.UpdateBook)
-		v1.DELETE("/books/:id", middleware.APIKeyAuth(), bookRepository.DeleteBook)
 
-		v1.POST("/login", middleware.APIKeyAuth(), userRepository.LoginHandler)
-		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)
+	// Base API group with common middleware
+	v1 := r.Group("/api/v1")
+	v1.Use(middleware.APIKeyAuth())
+
+	// Public routes (no auth required)
+	v1.GET("/", bookRepository.Healthcheck)
+
+	// Auth routes (login/register)
+	auth := v1.Group("/")
+	{
+		auth.POST("/login", userRepository.LoginHandler)
+		auth.POST("/register", userRepository.RegisterHandler)
+	}
+
+	// Protected routes (JWT required)
+	protected := v1.Group("/books")
+	protected.Use(middleware.JWTAuth())
+	{
+		protected.GET("", bookRepository.FindBooks)
+		protected.POST("", bookRepository.CreateBook)
+		protected.GET("/:id", bookRepository.FindBook)
+		protected.PUT("/:id", bookRepository.UpdateBook)
+		protected.DELETE("/:id", bookRepository.DeleteBook)
 	}
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 

@@ -11,8 +11,8 @@ type Book struct {
 }
 
 type CreateBook struct {
-	Title  string `json:"title" binding:"required"`
-	Author string `json:"author" binding:"required"`
+	Title  string `json:"title" binding:"required,min=1,max=255"`
+	Author string `json:"author" binding:"required,min=1,max=255"`
 }
 
 type UpdateBook struct {
