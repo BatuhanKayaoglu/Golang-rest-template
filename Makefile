@@ -8,9 +8,14 @@ setup:
 build-docker:
 	docker compose build --no-cache
 
+# Start all dependencies without backend (for local debugging)
+deps:
+	docker compose up db redis mongo elasticsearch kibana apm-server -d
+
 run-local:
-	docker compose up db redis mongo -d
+	docker compose up db redis mongo elasticsearch kibana apm-server -d
 	REDIS_HOST=localhost \
+	REDIS_PORT=8381 \
 	POSTGRES_DB=go_app_dev \
 	POSTGRES_USER=docker \
 	POSTGRES_PASSWORD=password \

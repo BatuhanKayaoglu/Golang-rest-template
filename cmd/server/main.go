@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"golang-rest-api-template/pkg/api"
+	"golang-rest-api-template/pkg/apm"
 	"golang-rest-api-template/pkg/cache"
 	"golang-rest-api-template/pkg/config"
 	"golang-rest-api-template/pkg/database"
@@ -46,6 +47,9 @@ import (
 func main() {
 	cfg := config.Load()
 
+	// Initialize APM
+	apm.Init(&cfg.APM)
+
 	redisClient := cache.NewRedisClient()
 	db := database.NewDatabase()
 	dbWrapper := &database.GormDatabase{DB: db}
@@ -88,6 +92,9 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("Server forced to shutdown: %v", err)
 	}
+
+	// Close APM tracer
+	apm.Close()
 
 	log.Println("Server exited gracefully")
 }

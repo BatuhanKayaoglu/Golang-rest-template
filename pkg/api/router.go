@@ -31,6 +31,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 
 	r := gin.New()
 	r.Use(gin.Recovery())
+	r.Use(middleware.APM()) // APM middleware for tracing
 	r.Use(ContextMiddleware(bookRepository))
 
 	//r.Use(gin.Logger())

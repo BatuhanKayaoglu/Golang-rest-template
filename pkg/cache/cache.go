@@ -16,9 +16,13 @@ type Cache interface {
 }
 
 func NewRedisClient() *redis.Client {
+	redisPort := os.Getenv("REDIS_PORT")
+	if redisPort == "" {
+		redisPort = "6379" // Default Redis internal port
+	}
 	return redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_HOST") + ":8381", // Redis server address (change to localhost when running local)
-		Password: "",                                // Password, leave empty if none
-		DB:       0,                                 // Default DB
+		Addr:     os.Getenv("REDIS_HOST") + ":" + redisPort,
+		Password: "",
+		DB:       0,
 	})
 }
