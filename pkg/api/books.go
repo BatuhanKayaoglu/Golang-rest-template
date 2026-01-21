@@ -3,12 +3,14 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"golang-rest-api-template/pkg/cache"
-	"golang-rest-api-template/pkg/database"
-	"golang-rest-api-template/pkg/models"
-	"golang-rest-api-template/pkg/response"
 	"strconv"
 	"time"
+
+	"golang-rest-api-template/pkg/cache"
+	"golang-rest-api-template/pkg/database"
+
+	"golang-rest-api-template/pkg/models"
+	"golang-rest-api-template/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -128,7 +130,7 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 	var input models.CreateBook
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, "Invalid input format")
 		return
 	}
 

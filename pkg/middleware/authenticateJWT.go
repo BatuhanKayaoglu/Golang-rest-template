@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"golang-rest-api-template/pkg/auth"
-	"net/http"
+	"golang-rest-api-template/pkg/response"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -14,14 +14,12 @@ func JWTAuth() gin.HandlerFunc {
 		const BearerSchema = "Bearer "
 		header := c.GetHeader("Authorization")
 		if header == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing Authorization Header"})
-			c.Abort()
+			response.Unauthorized(c, "Missing Authorization Header")
 			return
 		}
 
 		if !strings.HasPrefix(header, BearerSchema) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization Header"})
-			c.Abort()
+			response.Unauthorized(c, "Invalid Authorization Header")
 			return
 		}
 
@@ -33,14 +31,12 @@ func JWTAuth() gin.HandlerFunc {
 		})
 
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			c.Abort()
+			response.Unauthorized(c, "Invalid token")
 			return
 		}
 
 		if !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			c.Abort()
+			response.Unauthorized(c, "Invalid token")
 			return
 		}
 
