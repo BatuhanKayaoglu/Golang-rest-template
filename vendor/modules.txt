@@ -244,7 +244,7 @@ github.com/pkg/errors
 # github.com/prometheus/procfs v0.0.0-20190425082905-87a4384529e0
 ## explicit
 github.com/prometheus/procfs
-# github.com/stretchr/testify v1.10.0
+# github.com/stretchr/testify v1.11.1
 ## explicit; go 1.17
 # github.com/swaggo/files v1.0.1
 ## explicit; go 1.16
